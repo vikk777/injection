@@ -1,0 +1,2 @@
+@load ./xss
+@load ./ssti
