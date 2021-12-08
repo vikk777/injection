@@ -1,22 +1,27 @@
 @load ./inj.base
 
 
-## XSS detection
+# XSS detection
 module XSS;
 
 export
 {
-	# redef INJ::looking_in_replay = T;
-	# redef INJ::log_path = "xss";
-	# redef INJ::inj_type = "XSS";
-	# redef INJ::regex = /<(\/)?script *>/
-	# 				| /(onerror|onfocus|onload|srcdoc) *=.*>?/
-	# 				| /(href|src) *= *['"]?javascript *:.*?['"]?/
-	# 				| (/[a-zA-Z_\-]+[\(`].*[\)`]/)
-	# 				;
+	redef enum Log::ID += { XSS_LOG };
 }
 
 event inj_init()
 {
-	INJ::injections += "xss";
+	local cfg = INJ::Config
+	(
+		$log_id = XSS_LOG,
+		$looking_in_replay = T,
+		$log_path = "xss",
+		$inj_type = "XSS",
+		$regex = /<(\/)?script *>/
+					| /(onerror|onfocus|onload|srcdoc) *=.*>?/
+					| /(href|src) *= *['"]?javascript *:.*?['"]?/
+					| (/[a-zA-Z_\-]+[\(`].*[\)`]/)
+	);
+
+	INJ::injections += cfg;
 }

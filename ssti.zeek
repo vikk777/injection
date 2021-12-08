@@ -1,19 +1,25 @@
 @load ./inj.base
 
 
-## SSTI detection
+# SSTI detection
 module SSTI;
 
 export
 {
-	# redef INJ::looking_in_replay = F;
-	# redef INJ::log_path = "ssti";
-	# redef INJ::inj_type = "SSTI";
-	# redef INJ::regex = /\{\{.+\}\}/;
+	redef enum Log::ID += { SSTI_LOG };
 }
 
 
 event inj_init()
 {
-	INJ::injections += "ssti";
+	local cfg = INJ::Config
+	(
+		$log_id = SSTI_LOG,
+		$looking_in_replay = F,
+		$log_path = "ssti",
+		$inj_type = "SSTI",
+		$regex = /\{\{.+\}\}/
+	);
+
+	INJ::injections += cfg;
 }
