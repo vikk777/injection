@@ -9,19 +9,24 @@ module INJ;
 
 export
 {
-	redef enum Log::ID += { LOG };
+	# redef enum Log::ID += { LOG };
+	global inj_init: event();
 
-	option looking_in_replay = T &redef;
-	option log_path = "" &redef;
-	option inj_type = "" &redef;
+	type CFG: record
+	{
+		# bool looking_in_replay;
+		# string log_path;
+		inj_type: string;
+		# pattern regex;
+	};
+
+	global injections: vector of string;
 	option message = "[SECURITY] %s attack detected";
-	option regex = /.*/ &redef;
 
 	type INJ_T: record
 	{
 		conn: string &default="";
-		key: string;
-		val: string;
+		params: table[string] of string;
 	};
 
 	type Info: record
@@ -40,54 +45,66 @@ global inj: INJ_T;
 #  Looking for suspicios regex in parameters
 function watch_dog(c: connection, params: table[string] of string)
 {
-	for (key, val in params)
-	{
-		if (INJ::regex in unescape_URI(val))
-		{
-			inj$conn = c$uid;
-			inj$val = val;
-			inj$key = key;
-		}
-	}
+	# for (key, val in params)
+	# {
+	# 	if (INJ::regex in unescape_URI(val))
+	# 	{
+	# 		inj$conn = c$uid;
+	# 		inj$params[key] = val;
+	# 	}
+	# }
 }
 
 
 event zeek_init()
 {
-	Log::create_stream(INJ::LOG, [$columns=Info, $path=INJ::log_path]);
+	# Log::create_stream(INJ::LOG, [$columns=Info, $path=INJ::log_path]);
+	event inj_init();
+	while (|injections| == 0)
+	{
+		
+	}
+	print injections;
+	# for (i in injections)
+	# {
+	# 	print i;
+	# }
 }
 
 
 #  Event calls when request from orig sended
-event http_request(c: connection, method: string, original_URI: string, unescaped_URI: string, version: string)
-{
-	local params = parser(original_URI);
-	watch_dog(c, params);
-}
+# event http_request(c: connection, method: string, original_URI: string, unescaped_URI: string, version: string)
+# {
+# 	local params = parser(original_URI);
+# 	watch_dog(c, params);
+# }
 
 
-#  Event calls when zeek starts parsing packet data
-event http_entity_data(c: connection, is_orig: bool, length: count, data: string)
-{
-	if (is_orig)
-	{
-		local params = parser(data);
-		watch_dog(c, params);
-	}
-	else
-	{
-		if (c$uid == inj$conn)
-		{
-			local predicate = (looking_in_replay) ? (inj$val in data) : (inj$val !in data);
-			if (predicate)
-			{
-				print fmt(INJ::message, INJ::inj_type);
+# #  Event calls when zeek starts parsing packet data
+# event http_entity_data(c: connection, is_orig: bool, length: count, data: string)
+# {
+# 	if (is_orig)
+# 	{
+# 		local params = parser(data);
+# 		watch_dog(c, params);
+# 	}
+# 	else
+# 	{
+# 		if (c$uid == inj$conn)
+# 		{
+# 			for (key, val in inj$params)
+# 			{
+# 				local predicate = (looking_in_replay) ? (val in data) : (val !in data);
+# 				if (predicate)
+# 				{
+# 					# print fmt(INJ::message, INJ::inj_type);
 
-				Log::write(INJ::LOG, [$id=c$id, $param=inj$key, $payload=inj$val,
-							$uri=c$http$uri, $method=c$http$method]);
-			}
-		}
+# 					# Log::write(INJ::LOG, [$id=c$id, $param=key, $payload=val,
+# 					# 			$uri=c$http$uri, $method=c$http$method]);
+# 				}
+# 			}
+# 		}
 
-		inj$conn = "";
-	}
-}
+# 		inj$conn = "";
+# 	}
+# }
